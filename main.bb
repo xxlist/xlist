@@ -228,11 +228,10 @@
 
 ;; === Main ===
 
-(->
+(->>
  (fs/read-all-lines "./xlist.txt")
  sort
  fetch-info-list
  info-list->markdown-table
- println)
-
-
+ (conj [])
+ (fs/write-lines "./README.md"))

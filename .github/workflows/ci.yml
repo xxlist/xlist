@@ -1,11 +1,20 @@
 name: CI
-on: [push, pull_request]
+on: 
+  workflow_dispatch:
+  push:
+    branches: 
+      - main
+    
 jobs:
   run:
     runs-on: ubuntu-latest
+    permissions: 
+      contents: write
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
+        with: 
+          ref: ${{ github.head_ref }}
       - name: Install clojure tools
         uses: DeLaGuardo/setup-clojure@13.4
         with:
@@ -14,4 +23,7 @@ jobs:
         run: bb --version
       - name: Run main.bb
         run: bb main.bb
-
+      - name: Git auto commit and push all changes
+        uses: stefanzweifel/git-auto-commit-action@v6
+        with: 
+          branch: doc
