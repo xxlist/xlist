@@ -48,7 +48,7 @@
 (defn info-keys
   "Returns keys of [Info]"
   []
-  [:code :title :cover-url :preview-url :play-url :publish-date])
+  [:code :cover-url :title :publish-date])
 
 (defn ^String info-markdown-table-header
   "Generate markdown table header for [Info]"
@@ -84,24 +84,13 @@
 ;; "Format value of [cover-url] of [Info] to markdown table cell"
 (defmethod ^String info-field-value-to-markdown-table-cell :cover-url
   [_ info]
-  (format "<img src=\"%s\">"
-          (get info :cover-url "")))
-
-;; "Format value of [preview-url] of [Info] to markdown table cell"
-(defmethod ^String info-field-value-to-markdown-table-cell :preview-url
-  [_ info]
-  (format "<video><source src=\"%s\" type=\"video/mp4\"></video>"
-          (get info :preview-url "")))
-
-;; "Format value of [play-url] of [Info] to markdown table cell"
-(defmethod ^String info-field-value-to-markdown-table-cell :play-url
-  [_ info]
-  (format "<video><source src=\"%s\" type=\"application/x-mpegURL\"></video>"
+  (format "[<img src=\"%s\">](%s)"
+          (get info :cover-url "")
           (get info :play-url "")))
 
 (defn ^String info->markdown-table-row
   "Convert [Info] to markdown table row"
-  [info]
+  [^Info info]
   (str "| "
        (->> (info-keys)
             (map #(info-field-value-to-markdown-table-cell % info))
@@ -151,8 +140,7 @@
   (throw (ex-info "Unimplemented default method of multi-methods [info-field-value-from-html]")))
 
 ;; "Parse value of [title] of [Info] from html"
-(defmethod info-field-value-from-html
-  :title
+(defmethod info-field-value-from-html :title
   [_ html-content]
   (let [re #"og:title\" content=\"([\s\S]+?)\""]
     (some->> html-content
@@ -197,7 +185,7 @@
 
 (defn ^Info info-from-html
   "Parse [Info] from html content"
-  [code home-url html-content]
+  [^String code ^String home-url ^String html-content]
   (map->Info {:code code
               :home-url home-url
               :preview-url (str "https://fourhoi.com/" code "/preview.mp4")
@@ -209,12 +197,12 @@
 (comment
   (for [field-key [:title :publish-date :cover-url :play-url]]
     (some->>
-     (fs/read-all-bytes "./test.html")
+     (fs/read-all-bytes "test.html")
      (String.)
      (info-field-value-from-html field-key)))
 
   (->>
-   (fs/read-all-bytes "./test.html")
+   (fs/read-all-bytes "test.html")
    (String.)
    (info-from-html "juq-933" "https://missav.ai/cn/juq-933")))
 
@@ -225,12 +213,11 @@
                   :accept-encoding "gzip, deflate, br"
                   :accept-language "zh-CN,zh-HK;q=0.9,zh;q=0.8"
                   :cache-control "max-age=0"
-                  :cookie "user_uuid=abfc2364-87fb-499a-ac91-0dd1e78d475f; XSRF-TOKEN=eyJpdiI6IjQ3UjFFdERYcnZCTEJ3ajZSMW0xeFE9PSIsInZhbHVlIjoiSzNaa0RodUIvQmdGWjNJcmpTZC9ndnhUbmgxQUNwS0JzMkhmZTJzUHIya25uZ2EzZ3Z2Q2EvQ1graU5Wc2tkazQxeHJldVZmait6ZHZUSitYWklVdHpyZnA4aW9KZURmL1Q0c0QvcXhZc3pwZVVkNWEwbExWV1JQVGk2OEF1U28iLCJtYWMiOiI1ODJkZTczODVjZjViZTEzMzdiOTUwZmNiN2M0YTZlZTRkNDI2M2ExZDk3MTM2NWRhZDNhYjY1YTE3NWQwMWQxIiwidGFnIjoiIn0%3D; missav_session=eyJpdiI6IlVzaDIyZlluczZ0UmNLcElBYkpwZmc9PSIsInZhbHVlIjoiUE83VjkySXpwQTlXYVFzeXB5Z1Jlem9ic21OZEZySVBkOHU0WnhpNDlrS1dVSjlETXdISzhFc3N5QzB0S09lQk96U2ZzMWw0YzlxOVJUaVgvbnV1UFVhbnhINWg1M0s3cGxBeVhzQ2w0eklsbzVYUnM4Y1RsU2xGRlFjQm1vdDkiLCJtYWMiOiJlMTJkYmMwZDQwZWQxMWQ0Mzg2OGNjNjE1ZDU1MTBkMTczMDIzZjA1MDExYTdiMTc3NTA1ZmNiMjAyNWI0Yjk4IiwidGFnIjoiIn0%3D; rrd0DAJNLP5YYnm2cNuTI2VTYJokJIT3IALbtjE7=eyJpdiI6InA3RldoVkZ1L2ppUTJxR1R0QWl2M0E9PSIsInZhbHVlIjoiZFJ4SUxhSkRVbzVYV3lFU1hraXhvRGNydVZxZkNwS3JhK2p3cUg5QmhPRi9DeUp1UENVRWNBdXp6SmZ1NG5hWVk5YkN2ZlB2MnVPbmJ4ditVWmwrYnl5eDhlcFNEUHAyeUhER3JQNkx2ajJJT2FFUUovaEhaRlBLMFlRNEpsZVBxWEVDM2VYNVU0SlluL1FrQktRYjdhWFVaV3JQYjN1Sm1XUWY4TVhMSFI4RGNCOW5XeEU4aXdhMjRlOERIMGRsMEl2VGptOTJUKzJhaG5XNW1BM0ppeVdleU02cEZkZVg0d3B4bmJIb3BFempIYjl4NnZaZ01HazkrOVJ2Tk5wUzBFdXNoWm5jSElRYWM3Q2VmNDE5cFZjaVc4WEZqRWFCY2pvZDY4RjB2MkpRdnphZ1VxWTZRdVE3anpWRkpwNXNCcnowS2FMRlhFSVNQTEYyTFpwQnJVaHNEeVFwNWFqOWwvOWFPTTRha3BHN1RZUzBHa0pJL1FUdk1RV1JmTkx2TkNmdlFjYVVMVDBuZGhJa25iajNyQT09IiwibWFjIjoiNDFlYmY4YTEwN2VjNDY2ZTE2MDgxZWY1ZTEyZDYzNzk1YWM1OTExZTEwNjQ3ZDBjNmJlYjczNjNhNjdjOWFhMSIsInRhZyI6IiJ9"
                   :user-agent "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"})
 
 (defn ^String fetch-html
   "Fetch html content by the given url"
-  [url]
+  [^String url]
   (log/debug url)
   (->
    (http/get url {:throw true :header base-header})
@@ -238,7 +225,7 @@
 
 (defn ^Info fetch-info
   "Fetch [Info] by the given code"
-  [code]
+  [^String code]
   (let [home-url (str base-uri "/" code)
         html-content (retry {:retries 3 :delay-ms 1000 :jitter-ms 200}
                             fetch-html home-url)]
@@ -261,10 +248,14 @@
 
 ;; === Main ===
 
-(->>
- (fs/read-all-lines "./xlist.txt")
- sort
- fetch-info-list
- info-list->markdown-table
- (conj [])
- (fs/write-lines "./README.md"))
+(defn -main [args]
+  (->>
+   (fs/read-all-lines "xlist.txt")
+   sort
+   fetch-info-list
+   info-list->markdown-table
+   (conj [])
+   (fs/write-lines "README.md")))
+
+(when (= *file* (System/getProperty "babashka.file"))
+  (-main *command-line-args*))
