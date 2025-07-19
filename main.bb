@@ -81,11 +81,11 @@
           (get info :home-url "")
           (get info :code "")))
 
-;; "Format value of [conver-url] of [Info] to markdown table cell"
-(defmethod ^String info-field-value-to-markdown-table-cell :conver-url
+;; "Format value of [cover-url] of [Info] to markdown table cell"
+(defmethod ^String info-field-value-to-markdown-table-cell :cover-url
   [_ info]
   (format "<img src=\"%s\">"
-          (get info :conver-url "")))
+          (get info :cover-url "")))
 
 ;; "Format value of [preview-url] of [Info] to markdown table cell"
 (defmethod ^String info-field-value-to-markdown-table-cell :preview-url
