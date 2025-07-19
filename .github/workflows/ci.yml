@@ -27,3 +27,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v6
         with: 
           branch: doc
+          push_options: '--force'
