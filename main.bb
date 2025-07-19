@@ -48,7 +48,7 @@
 (defn info-keys
   "Returns keys of [Info]"
   []
-  [:code :title :home-url :cover-url :preview-url :play-url :publish-date])
+  [:code :title :cover-url :preview-url :play-url :publish-date])
 
 (defn ^String info-markdown-table-header
   "Generate markdown table header for [Info]"
@@ -66,12 +66,45 @@
         (string/join "|"))
        "|"))
 
+(defmulti ^String info-field-value-to-markdown-table-cell
+  "Format value of [field-key] of [Info] to markdown table cell"
+  (fn [field-key info] field-key))
+
+(defmethod ^String info-field-value-to-markdown-table-cell :default
+  [field-key info]
+  (get info field-key ""))
+
+;; "Format value of [code] of [Info] to markdown table cell"
+(defmethod ^String info-field-value-to-markdown-table-cell :code
+  [_ info]
+  (format "<a href=\"%s\">%s</a>"
+          (get info :home-url "")
+          (get info :code "")))
+
+;; "Format value of [conver-url] of [Info] to markdown table cell"
+(defmethod ^String info-field-value-to-markdown-table-cell :conver-url
+  [_ info]
+  (format "<img src=\"%s\">"
+          (get info :conver-url "")))
+
+;; "Format value of [preview-url] of [Info] to markdown table cell"
+(defmethod ^String info-field-value-to-markdown-table-cell :preview-url
+  [_ info]
+  (format "<video><source src=\"%s\" type=\"video/mp4\"></video>"
+          (get info :preview-url "")))
+
+;; "Format value of [play-url] of [Info] to markdown table cell"
+(defmethod ^String info-field-value-to-markdown-table-cell :play-url
+  [_ info]
+  (format "<video><source src=\"%s\" type=\"application/x-mpegURL\"></video>"
+          (get info :play-url "")))
+
 (defn ^String info->markdown-table-row
   "Convert [Info] to markdown table row"
   [info]
   (str "| "
        (->> (info-keys)
-            (map #(get info % ""))
+            (map #(info-field-value-to-markdown-table-cell % info))
             (string/join " | "))
        " |"))
 
