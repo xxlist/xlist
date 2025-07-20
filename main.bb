@@ -10,11 +10,7 @@
 (defn jitted-delay
   "Return delay time that is jitted"
   [delay-ms jitter-ms]
-  (-> (* 2 jitter-ms)
-      inc
-      rand-int
-      (- jitter-ms)
-      (+ delay-ms)))
+  (-> (* 2 jitter-ms) inc rand-int (- jitter-ms) (+ delay-ms)))
 
 (defn retry
   "Retry (apply f args) according to [retry-config]"
@@ -100,9 +96,7 @@
 (defn ^String info-list->markdown-table-body
   "Generate markdown table body by the given [Info] list"
   [info-list]
-  (->> info-list
-       (map info->markdown-table-row)
-       (string/join "\n")))
+  (->> info-list (map info->markdown-table-row) (string/join "\n")))
 
 (defn ^String info-list->markdown-table
   "Convert [Info] list to markdown table"
@@ -125,9 +119,7 @@
                        :cover-url  "https://fourhoi.com/juq-933/cover-n.jpg"
                        :play-url "https://surrit.com/58421d0a-b514-4e71-ae8a-05c484bf059c/playlist.m3u8"}))]
 
-    (-> data
-        info-list->markdown-table
-        println)))
+    (-> data info-list->markdown-table println)))
 
 ;; === Parse [Info] from Html ===
 
@@ -143,44 +135,26 @@
 (defmethod info-field-value-from-html :title
   [_ html-content]
   (let [re #"og:title\" content=\"([\s\S]+?)\""]
-    (some->> html-content
-             (re-seq re)
-             first
-             last
-             string/trim)))
+    (some->> html-content (re-seq re) first last string/trim)))
 
 ;; "Parse value of [publish-date] of [Info] from html"
 (defmethod info-field-value-from-html :publish-date
   [_ html-content]
   (let [re #"class=\"font-medium\">([\s\S]+?)</time>"]
-    (some->> html-content
-             (re-seq re)
-             first
-             last
-             string/trim)))
+    (some->> html-content (re-seq re) first last string/trim)))
 
 ;; "Parse value of [cover-url] of [Info] from html"
 (defmethod info-field-value-from-html :cover-url
   [_ html-content]
   (let [re #"og:image\" content=\"([\s\S]+?cover-n.jpg)"]
-    (some->> html-content
-             (re-seq re)
-             first
-             last
-             string/trim)))
+    (some->> html-content (re-seq re) first last string/trim)))
 
 ;; "Parse value of [play-url] of [Info] from html"
 (defmethod info-field-value-from-html :play-url
   [_ html-content]
   (let [re #"m3u8\|([\s\S]+?)\|video"
-        parsed (some->> html-content
-                        (re-seq re)
-                        first
-                        last
-                        string/trim)
-        [scheme domain2 domain1 & ids] (-> parsed
-                                           (string/split #"\|")
-                                           reverse)]
+        parsed (some->> html-content (re-seq re) first last string/trim)
+        [scheme domain2 domain1 & ids] (-> parsed (string/split #"\|") reverse)]
     (str scheme "://" domain2 "." domain1 "/" (string/join "-" ids) "/" "playlist.m3u8")))
 
 (defn ^Info info-from-html
@@ -219,9 +193,7 @@
   "Fetch html content by the given url"
   [^String url]
   (log/debug url)
-  (->
-   (http/get url {:throw true :header base-header})
-   :body))
+  (-> (http/get url {:throw true :header base-header}) :body))
 
 (defn ^Info fetch-info
   "Fetch [Info] by the given code"
@@ -238,13 +210,8 @@
     (fetch-info code)))
 
 (comment
-  (-> (str base-uri "/" "juq-933")
-      fetch-html
-      println)
-
-  (->
-   (fetch-info "juq-933")
-   println))
+  (-> (str base-uri "/" "juq-933") fetch-html println)
+  (-> (fetch-info "juq-933") println))
 
 ;; === Main ===
 
