@@ -1,6 +1,5 @@
 #!/usr/bin/env bb
 
-(require '[clojure.string :as string])
 (require '[babashka.fs :as fs])
 (require '[babashka.http-client :as http])
 (require '[taoensso.timbre :as log])
@@ -52,7 +51,7 @@
   "Generate markdown table header for [Info]"
   []
   (str "|"
-       (string/join "|" (info-keys))
+       (str/join "|" (info-keys))
        "|"))
 
 (defn ^String info-markdown-table-seperator-line
@@ -61,7 +60,7 @@
   (str "|"
        (->>
         (repeat (count (info-keys)) ":----:")
-        (string/join "|"))
+        (str/join "|"))
        "|"))
 
 (defmulti ^String info-field-value-to-markdown-table-cell
@@ -92,13 +91,13 @@
   (str "| "
        (->> (info-keys)
             (map #(info-field-value-to-markdown-table-cell % info))
-            (string/join " | "))
+            (str/join " | "))
        " |"))
 
 (defn ^String info-list->markdown-table-body
   "Generate markdown table body by the given [Info] list"
   [info-list]
-  (->> info-list (map info->markdown-table-row) (string/join "\n")))
+  (->> info-list (map info->markdown-table-row) (str/join "\n")))
 
 (defn ^String info-list->markdown-table
   "Convert [Info] list to markdown table"
@@ -137,27 +136,27 @@
 (defmethod info-field-value-from-html :title
   [_ html-content]
   (let [re #"og:title\" content=\"([\s\S]+?)\""]
-    (some->> html-content (re-seq re) first last string/trim)))
+    (some->> html-content (re-seq re) first last str/trim)))
 
 ;; "Parse value of [publish-date] of [Info] from html"
 (defmethod info-field-value-from-html :publish-date
   [_ html-content]
   (let [re #"class=\"font-medium\">([\s\S]+?)</time>"]
-    (some->> html-content (re-seq re) first last string/trim)))
+    (some->> html-content (re-seq re) first last str/trim)))
 
 ;; "Parse value of [cover-url] of [Info] from html"
 (defmethod info-field-value-from-html :cover-url
   [_ html-content]
   (let [re #"og:image\" content=\"([\s\S]+?cover-n.jpg)"]
-    (some->> html-content (re-seq re) first last string/trim)))
+    (some->> html-content (re-seq re) first last str/trim)))
 
 ;; "Parse value of [play-url] of [Info] from html"
 (defmethod info-field-value-from-html :play-url
   [_ html-content]
   (let [re #"m3u8\|([\s\S]+?)\|video"
-        parsed (some->> html-content (re-seq re) first last string/trim)
-        [scheme domain2 domain1 & ids] (-> parsed (string/split #"\|") reverse)]
-    (str scheme "://" domain2 "." domain1 "/" (string/join "-" ids) "/" "playlist.m3u8")))
+        parsed (some->> html-content (re-seq re) first last str/trim)
+        [scheme domain2 domain1 & ids] (-> parsed (str/split #"\|") reverse)]
+    (str scheme "://" domain2 "." domain1 "/" (str/join "-" ids) "/" "playlist.m3u8")))
 
 ;; "Parse value of  [has-chinese-subtitle] of [Info] from html"
 (defmethod info-field-value-from-html :has-chinese-subtitle
