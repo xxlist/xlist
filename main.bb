@@ -37,7 +37,9 @@
                  ^String home-url
                  ^String cover-url
                  ^String preview-url
-                 ^String play-url])
+                 ^String play-url
+                 ^boolean has-chinese-subtitle
+                 ^boolean has-uncensored-leak])
 
 ;; === Convert [Info] list to Markdown Table ===
 
@@ -157,6 +159,18 @@
         [scheme domain2 domain1 & ids] (-> parsed (string/split #"\|") reverse)]
     (str scheme "://" domain2 "." domain1 "/" (string/join "-" ids) "/" "playlist.m3u8")))
 
+;; "Parse value of  [has-chinese-subtitle] of [Info] from html"
+(defmethod info-field-value-from-html :has-chinese-subtitle
+  [_ html-content]
+  (let [re #"切换中文字幕"]
+    (not (nil? (some->> html-content (re-seq re))))))
+
+;; "Parse value of  [has-uncensored-leak] of [Info] from html"
+(defmethod info-field-value-from-html :has-uncensored-leak
+  [_ html-content]
+  (let [re #"切换无码"]
+    (not (nil? (some->> html-content (re-seq re))))))
+
 (defn ^Info info-from-html
   "Parse [Info] from html content"
   [^String code ^String home-url ^String html-content]
@@ -166,7 +180,9 @@
               :title (info-field-value-from-html :title html-content)
               :publish-date (info-field-value-from-html :publish-date html-content)
               :cover-url (info-field-value-from-html :cover-url html-content)
-              :play-url (info-field-value-from-html :play-url html-content)}))
+              :play-url (info-field-value-from-html :play-url html-content)
+              :has-chinese-subtitle (info-field-value-from-html :has-chinese-subtitle html-content)
+              :has-uncensored-leak (info-field-value-from-html :has-uncensored-leak html-content)}))
 
 (comment
   (for [field-key [:title :publish-date :cover-url :play-url]]
@@ -195,13 +211,27 @@
   (log/debug url)
   (-> (http/get url {:throw true :header base-header}) :body))
 
+(defn ^Info update-play-url-if-need
+  "Update play-url if need"
+  [^Info info]
+  (cond
+    (:has-chinese-subtitle info) (assoc info :play-url (->> (str (:home-url info)  "-chinese-subtitle")
+                                                            (retry {:retries 3 :delay-ms 1000 :jitter-ms 200}
+                                                                   fetch-html)
+                                                            (info-field-value-from-html :play-url)))
+    (:has-uncensored-leak info) (assoc info :play-url (->> (str (:home-url info)  "-uncensored-leak")
+                                                           (retry {:retries 3 :delay-ms 1000 :jitter-ms 200}
+                                                                  fetch-html)
+                                                           (info-field-value-from-html :play-url)))
+    :else info))
+
 (defn ^Info fetch-info
   "Fetch [Info] by the given code"
   [^String code]
   (let [home-url (str base-uri "/" code)
         html-content (retry {:retries 3 :delay-ms 1000 :jitter-ms 200}
                             fetch-html home-url)]
-    (info-from-html code home-url html-content)))
+    (-> (info-from-html code home-url html-content) update-play-url-if-need)))
 
 (defn fetch-info-list
   "Fetch [Info] list by the given code list"
