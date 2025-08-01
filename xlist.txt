@@ -67,7 +67,6 @@ ebod-943
 ipx-725
 ipx-461
 dvaj-681
-ebod-976
 ure-071
 ssni-175
 mvsd-433
