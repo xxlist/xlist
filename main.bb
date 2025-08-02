@@ -188,6 +188,7 @@
               :cover-url (info-field-value-from-html :cover-url html-content)
               :play-url (info-field-value-from-html :play-url html-content)
               :has-chinese-subtitle (info-field-value-from-html :has-chinese-subtitle html-content)
+              :has-english-subtitle (info-field-value-from-html :has-english-subtitle html-content)
               :has-uncensored-leak (info-field-value-from-html :has-uncensored-leak html-content)}))
 
 (comment
