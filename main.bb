@@ -38,6 +38,7 @@
                  ^String preview-url
                  ^String play-url
                  ^boolean has-chinese-subtitle
+                 ^boolean has-english-subtitle
                  ^boolean has-uncensored-leak])
 
 ;; === Convert [Info] list to Markdown Table ===
@@ -164,6 +165,12 @@
   (let [re #"切换中文字幕"]
     (not (nil? (some->> html-content (re-seq re))))))
 
+;; "Parse value of  [has-english-subtitle] of [Info] from html"
+(defmethod info-field-value-from-html :has-english-subtitle
+  [_ html-content]
+  (let [re #"切换英文字幕"]
+    (not (nil? (some->> html-content (re-seq re))))))
+
 ;; "Parse value of  [has-uncensored-leak] of [Info] from html"
 (defmethod info-field-value-from-html :has-uncensored-leak
   [_ html-content]
@@ -215,6 +222,11 @@
   [^Info info]
   (cond
     (:has-chinese-subtitle info) (assoc info :play-url (->> (str (:home-url info)  "-chinese-subtitle")
+                                                            (retry {:retries 3 :delay-ms 1000 :jitter-ms 200}
+                                                                   fetch-html)
+                                                            (info-field-value-from-html :play-url)))
+
+    (:has-english-subtitle info) (assoc info :play-url (->> (str (:home-url info)  "-english-subtitle")
                                                             (retry {:retries 3 :delay-ms 1000 :jitter-ms 200}
                                                                    fetch-html)
                                                             (info-field-value-from-html :play-url)))
