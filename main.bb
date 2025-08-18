@@ -261,6 +261,7 @@
   (->>
    (fs/read-all-lines "xlist.txt")
    sort
+   distinct
    fetch-info-list
    info-list->markdown-table
    (conj [])
