@@ -1,6 +1,8 @@
 #!/usr/bin/env bb
 
+(require '[clojure.string :as str])
 (require '[babashka.fs :as fs])
+(require '[clojure.java.io :as io])
 (require '[babashka.http-client :as http])
 (require '[taoensso.timbre :as log])
 
@@ -40,6 +42,165 @@
                  ^boolean has-chinese-subtitle
                  ^boolean has-english-subtitle
                  ^boolean has-uncensored-leak])
+
+;; === Model [Channel] ===
+
+(defrecord CoverImage [^String url
+                       ^int width
+                       ^int height])
+
+(defrecord ChannelEntry [^String id
+                         ^String title
+                         ^String description
+                         ^long timestamp
+                         ^double duration
+                         ^String url
+                         cover-images
+                         ^String video-url])
+
+(defrecord Channel [^String id
+                    ^String title
+                    ^String description
+                    ^String url
+                    ^String avatar-url
+                    entries])
+
+;; === [Channel] to rss ===
+
+(defn rfc1123-datetime-formatted
+  [timestamp]
+  (->
+   (java.time.Instant/ofEpochSecond timestamp)
+   (.atZone (java.time.ZoneId/of "UTC"))
+   (.format  java.time.format.DateTimeFormatter/RFC_1123_DATE_TIME)))
+
+(comment
+  (rfc1123-datetime-formatted 1678886400))
+
+(defn replace-and-char
+  "Replace & to &amp;"
+  [s]
+  (str/replace s "&" "&amp;"))
+
+(comment
+  (replace-and-char "https://abc.xyz?foo=1&bar=2&baz=3"))
+
+(defn write-cdata
+  "Write [data] wrapped by [CDATA] into [writer]"
+  [writer data]
+  (doto writer
+    (.write "<![CDATA[ ")
+    (.write data)
+    (.write " ]]>")))
+
+(defn channel-entry->rss
+  "Write [ChannelEntry] as rss xml"
+  [writer {:keys [id
+                  title
+                  description
+                  cover-images
+                  url
+                  video-url
+                  duration
+                  timestamp]}]
+
+  (doto writer
+    (.write "<item>")
+    (.write "<guid>")
+    (.write id)
+    (.write "</guid>")
+    (.write "<title>")
+    (write-cdata title)
+    (.write "</title>")
+    (.write "<description>")
+    (write-cdata description)
+    (.write "</description>")
+    (.write "<pubDate>")
+    (.write (or (some-> timestamp rfc1123-datetime-formatted) ""))
+    (.write "</pubDate>")
+    (.write "<itunes:duration>")
+    (.write (str duration))
+    (.write "</itunes:duration>")
+    (.write (format "<itunes:image href=\"%s\"/>" (-> (last cover-images) :url replace-and-char)))
+    (.write (format "<enclosure url=\"%s\" type=\"video/mp4\"/>" (-> video-url replace-and-char)))
+    (.write "</item>")))
+
+(defn channel-entries->rss
+  [writer entries]
+  (doseq [e entries]
+    (channel-entry->rss writer e))
+  writer)
+
+(defn channel->rss
+  "Write [Channel] as rss xml"
+  [save-file {:keys [id title description url avatar-url entries]}]
+  (with-open [w (io/writer save-file)]
+    (doto w
+      (.write "<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+      (.write "<rss xmlns:itunes=\"http://www.itunes.com/dtds/podcast-1.0.dtd\" xmlns:atom=\"http://www.w3.org/2005/Atom\" version=\"2.0\">")
+      (.write "<channel>")
+      (.write "<title>")
+      (write-cdata title)
+      (.write "</title>")
+      (.write "<description>")
+      (write-cdata description)
+      (.write "</description>")
+      (.write "<link>")
+      (.write url)
+      (.write "</link>")
+      (.write (or (some->>
+                   avatar-url
+                   replace-and-char
+                   (format "<itunes:image href=\"%s\"/>")) ""))
+      (channel-entries->rss entries)
+      (.write "</channel>")
+      (.write "</rss>")
+      (.flush))
+    nil))
+
+(defn time-str->epoch-second [time-str]
+  (-> time-str
+      (java.time.LocalDate/parse java.time.format.DateTimeFormatter/ISO_LOCAL_DATE)
+      (.atStartOfDay (java.time.ZoneId/of "UTC"))
+      (.toEpochSecond)))
+
+(comment
+  (time-str->epoch-second "2024-10-13"))
+
+(defn info->channel-entry
+  [info]
+  (map->ChannelEntry {:id (:code info)
+                      :title (:title info)
+                      :description (:description info)
+                      :timestamp (-> (:publish-date info) time-str->epoch-second)
+                      :duration nil
+                      :url (:home-url info)
+                      :video-url (:play-url info)
+                      :cover-images (->> (map->CoverImage {:url (:cover-url info)})
+                                         (conj []))}))
+
+(defn info-list->channel
+  [info-list]
+  (map->Channel {:id "github.com/xxlist/xlist"
+                 :title "xlist-rss"
+                 :description "xlist-rss"
+                 :url "https://raw.githubusercontent.com/xxlist/xlist/refs/heads/doc/rss.xml"
+                 :avatar-url nil
+                 :entries (mapv info->channel-entry info-list)}))
+
+(comment
+  (->>
+   (map->Info
+    {:code  "juq-933"
+     :home-url "https://missav.ai/cn/juq-933"
+     :preview-url "https://fourhoi.com/JUQ-933/preview.mp4"
+     :title "JUQ-933 补习老师小百合的不为人知的一面 叶山小百合 - 叶山さゆり"
+     :description "今天放学后，我也听到走廊上有对学生大喊大叫的声音。这个声音是实习导师小百合老师。她是一位非常认真严格的老师，在我们学校争夺第一名和第二名，但作为班代表和一个专心学习的学生，我暗暗喜欢小百合老师的态度。有一天，当我爬上移动教室的楼梯时，我听到楼上传来小百合老师的声音。当我猛然抬头呼唤她时，小百合老师没有穿内裤。看到如此严肃的老师我惊呆了……我的裤裆也渐渐变硬了……"
+     :publish-date "2024-10-04"
+     :cover-url  "https://fourhoi.com/juq-933/cover-n.jpg"
+     :play-url "https://surrit.com/58421d0a-b514-4e71-ae8a-05c484bf059c/playlist.m3u8"})
+   (conj [])
+   info-list->channel))
 
 ;; === Convert [Info] list to Markdown Table ===
 
@@ -131,12 +292,18 @@
 
 (defmethod info-field-value-from-html :default
   [_ _]
-  (throw (ex-info "Unimplemented default method of multi-methods [info-field-value-from-html]")))
+  (throw (ex-info "Unimplemented default method of multi-methods [info-field-value-from-html]" {})))
 
 ;; "Parse value of [title] of [Info] from html"
 (defmethod info-field-value-from-html :title
   [_ html-content]
   (let [re #"og:title\" content=\"([\s\S]+?)\""]
+    (some->> html-content (re-seq re) first last str/trim)))
+
+;; "Parse value of [description] of [Info] from html"
+(defmethod info-field-value-from-html :description
+  [_ html-content]
+  (let [re #"og:description\" content=\"([\s\S]+?)\""]
     (some->> html-content (re-seq re) first last str/trim)))
 
 ;; "Parse value of [publish-date] of [Info] from html"
@@ -184,6 +351,7 @@
               :home-url home-url
               :preview-url (str "https://fourhoi.com/" code "/preview.mp4")
               :title (info-field-value-from-html :title html-content)
+              :description (info-field-value-from-html :description html-content)
               :publish-date (info-field-value-from-html :publish-date html-content)
               :cover-url (info-field-value-from-html :cover-url html-content)
               :play-url (info-field-value-from-html :play-url html-content)
@@ -192,7 +360,7 @@
               :has-uncensored-leak (info-field-value-from-html :has-uncensored-leak html-content)}))
 
 (comment
-  (for [field-key [:title :publish-date :cover-url :play-url]]
+  (for [field-key [:title :description :publish-date :cover-url :play-url]]
     (some->>
      (fs/read-all-bytes "test.html")
      (String.)
@@ -257,15 +425,41 @@
 
 ;; === Main ===
 
-(defn -main [args]
+(defmulti print-info-list
+  (fn [info-list file]
+    (-> (fs/split-ext file) last)))
+
+(defmethod print-info-list :default
+  [_ _]
+  (throw (ex-info "Unimplemented default method of multi-methods [print-info-list]" {})))
+
+(defmethod print-info-list "xml"
+  [info-list file]
   (->>
-   (fs/read-all-lines "xlist.txt")
-   sort
-   distinct
-   fetch-info-list
-   info-list->markdown-table
-   (conj [])
-   (fs/write-lines "README.md")))
+   info-list
+   info-list->channel
+   (channel->rss file)))
+
+(defmethod print-info-list "md"
+  [info-list file]
+  (->> info-list
+       info-list->markdown-table
+       (conj [])
+       (fs/write-lines file)))
+
+(defn -main [args]
+  (let [info-list
+        (->>
+         (fs/read-all-lines "xlist.txt")
+         sort
+         distinct
+         fetch-info-list)]
+
+    (log/info "writing rss.xml")
+    (print-info-list info-list "rss.xml")
+
+    (log/info "writing README.md")
+    (print-info-list info-list "README.md")))
 
 (when (= *file* (System/getProperty "babashka.file"))
   (-main *command-line-args*))
