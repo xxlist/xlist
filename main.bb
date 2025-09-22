@@ -39,6 +39,7 @@
                  ^String cover-url
                  ^String preview-url
                  ^String play-url
+                 ^boolean origin-is-chinese-subtitle
                  ^boolean has-chinese-subtitle
                  ^boolean has-english-subtitle
                  ^boolean has-uncensored-leak])
@@ -326,6 +327,12 @@
         [scheme domain2 domain1 & ids] (-> parsed (str/split #"\|") reverse)]
     (str scheme "://" domain2 "." domain1 "/" (str/join "-" ids) "/" "playlist.m3u8")))
 
+;; "Parse value of  [origin-is-chinese-subtitle] of [Info] from html"
+(defmethod info-field-value-from-html :origin-is-chinese-subtitle
+  [_ html-content]
+  (let [re #"<span>类型:</span>\s*<a href=\"https://missav.ai/cn/chinese-subtitle\" class=\"text-nord13 font-medium\">中文字幕</a>"]
+    (not (nil? (some->> html-content (re-seq re))))))
+
 ;; "Parse value of  [has-chinese-subtitle] of [Info] from html"
 (defmethod info-field-value-from-html :has-chinese-subtitle
   [_ html-content]
@@ -355,6 +362,7 @@
               :publish-date (info-field-value-from-html :publish-date html-content)
               :cover-url (info-field-value-from-html :cover-url html-content)
               :play-url (info-field-value-from-html :play-url html-content)
+              :origin-is-chinese-subtitle (info-field-value-from-html :origin-is-chinese-subtitle html-content)
               :has-chinese-subtitle (info-field-value-from-html :has-chinese-subtitle html-content)
               :has-english-subtitle (info-field-value-from-html :has-english-subtitle html-content)
               :has-uncensored-leak (info-field-value-from-html :has-uncensored-leak html-content)}))
@@ -390,6 +398,7 @@
   "Update play-url if need"
   [^Info info]
   (cond
+    (:origin-is-chinese-subtitle info) info
     (:has-chinese-subtitle info) (assoc info :play-url (->> (str (:home-url info)  "-chinese-subtitle")
                                                             (retry {:retries 3 :delay-ms 1000 :jitter-ms 200}
                                                                    fetch-html)
