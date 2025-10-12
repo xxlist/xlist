@@ -208,7 +208,7 @@
 (defn info-keys
   "Returns keys of [Info]"
   []
-  [:code :cover-url :title :publish-date])
+  [:code :cover-url :title])
 
 (defn ^String info-markdown-table-header
   "Generate markdown table header for [Info]"
