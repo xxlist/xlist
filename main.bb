@@ -116,7 +116,7 @@
     (write-cdata title)
     (.write "</title>")
     (.write "<description>")
-    (write-cdata description)
+    (write-cdata (str description))
     (.write "</description>")
     (.write "<pubDate>")
     (.write (or (some-> timestamp rfc1123-datetime-formatted) ""))
