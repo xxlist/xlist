@@ -20,6 +20,7 @@ cawd-679
 cetd-239
 clot-004
 clot-013
+cjod-257
 cjod-275
 crc-100
 dasd-727
@@ -280,3 +281,10 @@ xrw-558
 xrw-842
 xvsr-500
 badnews-5837228
+badnews-5837815
+badnews-5837275
+badnews-5837663
+badnews-5776631
+badnews-5837975
+badnews-5837468
+badnews-5837331
