@@ -228,23 +228,23 @@
         (str/join "|"))
        "|"))
 
-(defmulti ^String info-field-value-to-markdown-table-cell
+(defmulti ^String info-field->md-table-cell
   "Format value of [field-key] of [Info] to markdown table cell"
   (fn [field-key info] field-key))
 
-(defmethod ^String info-field-value-to-markdown-table-cell :default
+(defmethod ^String info-field->md-table-cell :default
   [field-key info]
   (get info field-key ""))
 
 ;; "Format value of [code] of [Info] to markdown table cell"
-(defmethod ^String info-field-value-to-markdown-table-cell :code
+(defmethod ^String info-field->md-table-cell :code
   [_ info]
   (format "<a href=\"%s\">%s</a>"
           (get info :home-url "")
           (get info :code "")))
 
 ;; "Format value of [cover-url] of [Info] to markdown table cell"
-(defmethod ^String info-field-value-to-markdown-table-cell :cover-url
+(defmethod ^String info-field->md-table-cell :cover-url
   [_ info]
   (format "[<img src=\"%s\">](%s)"
           (get info :cover-url "")
@@ -255,16 +255,16 @@
   [^Info info]
   (str "| "
        (->> (info-keys)
-            (map #(info-field-value-to-markdown-table-cell % info))
+            (map #(info-field->md-table-cell % info))
             (str/join " | "))
        " |"))
 
-(defn ^String info-list->markdown-table-body
+(defn ^String info-list->md-table-body
   "Generate markdown table body by the given [Info] list"
   [info-list]
   (->> info-list (map info->markdown-table-row) (str/join "\n")))
 
-(defn ^String info-list->markdown-table
+(defn ^String info-list->md-table
   "Convert [Info] list to markdown table"
   [info-list]
   (str
@@ -272,7 +272,7 @@
    "\n"
    (info-markdown-table-seperator-line)
    "\n"
-   (info-list->markdown-table-body info-list)))
+   (info-list->md-table-body info-list)))
 
 (comment
   (let [data (repeat 2
@@ -285,45 +285,45 @@
                        :cover-url  "https://fourhoi.com/juq-933/cover-n.jpg"
                        :play-url "https://surrit.com/58421d0a-b514-4e71-ae8a-05c484bf059c/playlist.m3u8"}))]
 
-    (-> data info-list->markdown-table println)))
+    (-> data info-list->md-table println)))
 
 ;; === Parse [Info] from Html ===
 
-(defmulti info-field-value-from-html
+(defmulti html->info-field
   "Parse value of [field-key] of [Info] from html"
   (fn [field-key html-content] [*origin* field-key]))
 
-(defmethod info-field-value-from-html :default
+(defmethod html->info-field :default
   [_ _]
-  ; (throw (ex-info "Unimplemented default method of multi-methods [info-field-value-from-html]" {}))
+  ; (throw (ex-info "Unimplemented default method of multi-methods [html->info-field]" {}))
   nil)
 
 ;; "Parse value of [title] of [Info] from html"
-(defmethod info-field-value-from-html [:missav :title]
+(defmethod html->info-field [:missav :title]
   [_ html-content]
   (let [re #"og:title\" content=\"([\s\S]+?)\""]
     (some->> html-content (re-seq re) first last str/trim)))
 
 ;; "Parse value of [description] of [Info] from html"
-(defmethod info-field-value-from-html [:missav :description]
+(defmethod html->info-field [:missav :description]
   [_ html-content]
   (let [re #"og:description\" content=\"([\s\S]+?)\""]
     (some->> html-content (re-seq re) first last str/trim)))
 
 ;; "Parse value of [publish-date] of [Info] from html"
-(defmethod info-field-value-from-html [:missav :publish-date]
+(defmethod html->info-field [:missav :publish-date]
   [_ html-content]
   (let [re #"class=\"font-medium\">([\s\S]+?)</time>"]
     (some->> html-content (re-seq re) first last str/trim)))
 
 ;; "Parse value of [cover-url] of [Info] from html"
-(defmethod info-field-value-from-html [:missav :cover-url]
+(defmethod html->info-field [:missav :cover-url]
   [_ html-content]
   (let [re #"og:image\" content=\"([\s\S]+?cover-n.jpg)"]
     (some->> html-content (re-seq re) first last str/trim)))
 
 ;; "Parse value of [play-url] of [Info] from html"
-(defmethod info-field-value-from-html [:missav :play-url]
+(defmethod html->info-field [:missav :play-url]
   [_ html-content]
   (let [re #"m3u8\|([\s\S]+?)\|video"
         parsed (some->> html-content (re-seq re) first last str/trim)
@@ -331,76 +331,76 @@
     (str scheme "://" domain2 "." domain1 "/" (str/join "-" ids) "/" "playlist.m3u8")))
 
 ;; "Parse value of  [origin-is-chinese-subtitle] of [Info] from html"
-(defmethod info-field-value-from-html [:missav :origin-is-chinese-subtitle]
+(defmethod html->info-field [:missav :origin-is-chinese-subtitle]
   [_ html-content]
   (let [re #"<span>类型:</span>\s*<a href=\"https://missav.ai/cn/chinese-subtitle\" class=\"text-nord13 font-medium\">中文字幕</a>"]
     (not (nil? (some->> html-content (re-seq re))))))
 
 ;; "Parse value of  [has-chinese-subtitle] of [Info] from html"
-(defmethod info-field-value-from-html [:missav :has-chinese-subtitle]
+(defmethod html->info-field [:missav :has-chinese-subtitle]
   [_ html-content]
   (let [re #"切换中文字幕"]
     (not (nil? (some->> html-content (re-seq re))))))
 
 ;; "Parse value of  [has-english-subtitle] of [Info] from html"
-(defmethod info-field-value-from-html [:missav :has-english-subtitle]
+(defmethod html->info-field [:missav :has-english-subtitle]
   [_ html-content]
   (let [re #"切换英文字幕"]
     (not (nil? (some->> html-content (re-seq re))))))
 
 ;; "Parse value of  [has-uncensored-leak] of [Info] from html"
-(defmethod info-field-value-from-html [:missav :has-uncensored-leak]
+(defmethod html->info-field [:missav :has-uncensored-leak]
   [_ html-content]
   (let [re #"切换无码"]
     (not (nil? (some->> html-content (re-seq re))))))
 
-(defmethod info-field-value-from-html [:badnews :title]
+(defmethod html->info-field [:badnews :title]
   [_ html-content]
   (let [re #"<title>(.+?)</title>"]
     (some->> html-content (re-seq re) first last str/trim)))
 
-(defmethod info-field-value-from-html [:badnews :publish-date]
+(defmethod html->info-field [:badnews :publish-date]
   [_ html-content]
   (let [re #"time title=\"(\S+).+?\""]
     (some->> html-content (re-seq re) first last str/trim)))
 
-(defmethod info-field-value-from-html [:badnews :play-url]
+(defmethod html->info-field [:badnews :play-url]
   [_ html-content]
   (let [re #"usertext\-body[\s\S]+?class=\"my\-videos\"[\s\S]+?data\-source=\"(.+?)\""]
     (some->> html-content (re-seq re) first last str/trim)))
 
-(defmethod info-field-value-from-html [:badnews :cover-url]
+(defmethod html->info-field [:badnews :cover-url]
   [_ html-content]
   (let [re #"usertext\-body[\s\S]+?class=\"my\-videos\"[\s\S]+?poster=\"(.+?)\""]
     (some->> html-content (re-seq re) first last str/trim)))
 
-(defn ^Info info-from-html
+(defn ^Info html->info
   "Parse [Info] from html content"
   [^String code ^String home-url ^String html-content]
   (map->Info {:code code
               :home-url home-url
               :preview-url (when (= :missav *origin*) (str "https://fourhoi.com/" code "/preview.mp4"))
-              :title (info-field-value-from-html :title html-content)
-              :description (info-field-value-from-html :description html-content)
-              :publish-date (info-field-value-from-html :publish-date html-content)
-              :cover-url (info-field-value-from-html :cover-url html-content)
-              :play-url (info-field-value-from-html :play-url html-content)
-              :origin-is-chinese-subtitle (info-field-value-from-html :origin-is-chinese-subtitle html-content)
-              :has-chinese-subtitle (info-field-value-from-html :has-chinese-subtitle html-content)
-              :has-english-subtitle (info-field-value-from-html :has-english-subtitle html-content)
-              :has-uncensored-leak (info-field-value-from-html :has-uncensored-leak html-content)}))
+              :title (html->info-field :title html-content)
+              :description (html->info-field :description html-content)
+              :publish-date (html->info-field :publish-date html-content)
+              :cover-url (html->info-field :cover-url html-content)
+              :play-url (html->info-field :play-url html-content)
+              :origin-is-chinese-subtitle (html->info-field :origin-is-chinese-subtitle html-content)
+              :has-chinese-subtitle (html->info-field :has-chinese-subtitle html-content)
+              :has-english-subtitle (html->info-field :has-english-subtitle html-content)
+              :has-uncensored-leak (html->info-field :has-uncensored-leak html-content)}))
 
 (comment
   (for [field-key [:title :description :publish-date :cover-url :play-url]]
     (some->>
      (fs/read-all-bytes "test.html")
      (String.)
-     (info-field-value-from-html field-key)))
+     (html->info-field field-key)))
 
   (->>
    (fs/read-all-bytes "test.html")
    (String.)
-   (info-from-html "juq-933" "https://missav.ai/cn/juq-933")))
+   (html->info "juq-933" "https://missav.ai/cn/juq-933")))
 
 ;; === Fetch [Info] ===
 
@@ -412,7 +412,7 @@
                   :cache-control "max-age=0"
                   :user-agent "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"})
 
-(defn ^String fetch-html
+(defn ^String url->html
   "Fetch html content by the given url"
   [^String url]
   (log/debug url)
@@ -425,17 +425,17 @@
     (:origin-is-chinese-subtitle info) info
     (:has-chinese-subtitle info) (assoc info :play-url (->> (str (:home-url info)  "-chinese-subtitle")
                                                             (retry {:retries 3 :delay-ms 1000 :jitter-ms 200}
-                                                                   fetch-html)
-                                                            (info-field-value-from-html :play-url)))
+                                                                   url->html)
+                                                            (html->info-field :play-url)))
 
     (:has-english-subtitle info) (assoc info :play-url (->> (str (:home-url info)  "-english-subtitle")
                                                             (retry {:retries 3 :delay-ms 1000 :jitter-ms 200}
-                                                                   fetch-html)
-                                                            (info-field-value-from-html :play-url)))
+                                                                   url->html)
+                                                            (html->info-field :play-url)))
     (:has-uncensored-leak info) (assoc info :play-url (->> (str (:home-url info)  "-uncensored-leak")
                                                            (retry {:retries 3 :delay-ms 1000 :jitter-ms 200}
-                                                                  fetch-html)
-                                                           (info-field-value-from-html :play-url)))
+                                                                  url->html)
+                                                           (html->info-field :play-url)))
     :else info))
 
 (defn origin-home-url [code]
@@ -443,27 +443,27 @@
     [:badnews (str badnews-base-uri "/" (subs code (count "badnews-")))]
     [:missav (str base-uri "/" code)]))
 
-(defn ^Info fetch-info
+(defn ^Info code->info
   "Fetch [Info] by the given code"
   [^String code]
   (let [[origin home-url] (origin-home-url code)
 
         html-content (retry {:retries 3 :delay-ms 1000 :jitter-ms 200}
-                            fetch-html home-url)]
+                            url->html home-url)]
 
     (binding [*origin* origin]
-      (-> (info-from-html code home-url html-content) update-play-url-if-need))))
+      (-> (html->info code home-url html-content) update-play-url-if-need))))
 
-(defn fetch-info-list
+(defn code-list->info-list
   "Fetch [Info] list by the given code list"
   [code-list]
   (for [code code-list]
-    (fetch-info code)))
+    (code->info code)))
 
 (comment
-  (-> (str base-uri "/" "juq-933") fetch-html println)
-  (-> (fetch-info "juq-933") println)
-  (-> (fetch-info "badnews-5837228") println))
+  (-> (str base-uri "/" "juq-933") url->html println)
+  (-> (code->info "juq-933") println)
+  (-> (code->info "badnews-5837228") println))
 
 ;; === Main ===
 
@@ -485,7 +485,7 @@
 (defmethod print-info-list "md"
   [info-list file]
   (->> info-list
-       info-list->markdown-table
+       info-list->md-table
        (conj [])
        (fs/write-lines file)))
 
@@ -495,7 +495,7 @@
          (fs/read-all-lines "xlist.txt")
          sort
          distinct
-         fetch-info-list)]
+         code-list->info-list)]
 
     (log/info "writing rss.xml")
     (print-info-list info-list "rss.xml")
