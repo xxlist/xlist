@@ -236,14 +236,12 @@
   [field-key info]
   (get info field-key ""))
 
-;; "Format value of [code] of [Info] to markdown table cell"
 (defmethod ^String info-field->md-table-cell :code
   [_ info]
   (format "<a href=\"%s\">%s</a>"
           (get info :home-url "")
           (get info :code "")))
 
-;; "Format value of [cover-url] of [Info] to markdown table cell"
 (defmethod ^String info-field->md-table-cell :cover-url
   [_ info]
   (format "[<img src=\"%s\">](%s)"
@@ -298,31 +296,26 @@
   ; (throw (ex-info "Unimplemented default method of multi-methods [html->info-field]" {}))
   nil)
 
-;; "Parse value of [title] of [Info] from html"
 (defmethod html->info-field [:missav :title]
   [_ html-content]
   (let [re #"og:title\" content=\"([\s\S]+?)\""]
     (some->> html-content (re-seq re) first last str/trim)))
 
-;; "Parse value of [description] of [Info] from html"
 (defmethod html->info-field [:missav :description]
   [_ html-content]
   (let [re #"og:description\" content=\"([\s\S]+?)\""]
     (some->> html-content (re-seq re) first last str/trim)))
 
-;; "Parse value of [publish-date] of [Info] from html"
 (defmethod html->info-field [:missav :publish-date]
   [_ html-content]
   (let [re #"class=\"font-medium\">([\s\S]+?)</time>"]
     (some->> html-content (re-seq re) first last str/trim)))
 
-;; "Parse value of [cover-url] of [Info] from html"
 (defmethod html->info-field [:missav :cover-url]
   [_ html-content]
   (let [re #"og:image\" content=\"([\s\S]+?cover-n.jpg)"]
     (some->> html-content (re-seq re) first last str/trim)))
 
-;; "Parse value of [play-url] of [Info] from html"
 (defmethod html->info-field [:missav :play-url]
   [_ html-content]
   (let [re #"m3u8\|([\s\S]+?)\|video"
@@ -330,25 +323,21 @@
         [scheme domain2 domain1 & ids] (-> parsed (str/split #"\|") reverse)]
     (str scheme "://" domain2 "." domain1 "/" (str/join "-" ids) "/" "playlist.m3u8")))
 
-;; "Parse value of  [origin-is-chinese-subtitle] of [Info] from html"
 (defmethod html->info-field [:missav :origin-is-chinese-subtitle]
   [_ html-content]
   (let [re #"<span>类型:</span>\s*<a href=\"https://missav.ai/cn/chinese-subtitle\" class=\"text-nord13 font-medium\">中文字幕</a>"]
     (not (nil? (some->> html-content (re-seq re))))))
 
-;; "Parse value of  [has-chinese-subtitle] of [Info] from html"
 (defmethod html->info-field [:missav :has-chinese-subtitle]
   [_ html-content]
   (let [re #"切换中文字幕"]
     (not (nil? (some->> html-content (re-seq re))))))
 
-;; "Parse value of  [has-english-subtitle] of [Info] from html"
 (defmethod html->info-field [:missav :has-english-subtitle]
   [_ html-content]
   (let [re #"切换英文字幕"]
     (not (nil? (some->> html-content (re-seq re))))))
 
-;; "Parse value of  [has-uncensored-leak] of [Info] from html"
 (defmethod html->info-field [:missav :has-uncensored-leak]
   [_ html-content]
   (let [re #"切换无码"]
