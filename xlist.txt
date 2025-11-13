@@ -38,6 +38,7 @@ dsam-080
 dvaj-681
 dvdes-664
 ebod-270
+ebod-292
 ebod-313
 ebod-943
 ebwh-049
