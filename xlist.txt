@@ -242,6 +242,7 @@ sdmua-041
 shkd-912
 smok-001
 snis-626
+snis-659
 sone-795
 ssis-076
 ssis-257
@@ -256,7 +257,6 @@ ssni-557
 ssni-558
 ssni-606
 ssni-618
-ssni-659
 ssni-719
 ssni-743
 ssni-745
