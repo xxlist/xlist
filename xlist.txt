@@ -136,6 +136,8 @@ ktds-614
 ktds-717
 kymi-029
 ld-009
+lulu-054
+lulu-080
 lulu-228
 lulu-249
 lulu-258
