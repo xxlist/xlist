@@ -11,12 +11,10 @@
 (def ^:dynamic *origin* nil)
 
 (defn jitted-delay
-  "Return delay time that is jitted"
   [delay-ms jitter-ms]
   (-> (* 2 jitter-ms) inc rand-int (- jitter-ms) (+ delay-ms)))
 
 (defn retry
-  "Retry (apply f args) according to [retry-config]"
   [{:keys [retries delay-ms jitter-ms] :or {retries 0 delay-ms 0 jitter-ms 0} :as retry-config}
    f & args]
   (let [[ok-or-err value] (try [:ok (apply f args)]
@@ -46,7 +44,7 @@
                  ^boolean has-english-subtitle
                  ^boolean has-uncensored-leak])
 
-;; === Rss ===
+;; === RSS ===
 
 (defrecord CoverImage [^String url
                        ^int width
@@ -134,30 +132,28 @@
 
 (defn channel->rss
   "Write [Channel] as rss xml"
-  [save-file {:keys [id title description url avatar-url entries]}]
-  (with-open [w (io/writer save-file)]
-    (doto w
-      (.write "<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
-      (.write "<rss xmlns:itunes=\"http://www.itunes.com/dtds/podcast-1.0.dtd\" xmlns:atom=\"http://www.w3.org/2005/Atom\" version=\"2.0\">")
-      (.write "<channel>")
-      (.write "<title>")
-      (write-cdata title)
-      (.write "</title>")
-      (.write "<description>")
-      (write-cdata description)
-      (.write "</description>")
-      (.write "<link>")
-      (.write url)
-      (.write "</link>")
-      (.write (or (some->>
-                   avatar-url
-                   replace-and-char
-                   (format "<itunes:image href=\"%s\"/>")) ""))
-      (channel-entries->rss entries)
-      (.write "</channel>")
-      (.write "</rss>")
-      (.flush))
-    nil))
+  [writer {:keys [id title description url avatar-url entries]}]
+  (doto writer
+    (.write "<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+    (.write "<rss xmlns:itunes=\"http://www.itunes.com/dtds/podcast-1.0.dtd\" xmlns:atom=\"http://www.w3.org/2005/Atom\" version=\"2.0\">")
+    (.write "<channel>")
+    (.write "<title>")
+    (write-cdata title)
+    (.write "</title>")
+    (.write "<description>")
+    (write-cdata description)
+    (.write "</description>")
+    (.write "<link>")
+    (.write url)
+    (.write "</link>")
+    (.write (or (some->>
+                 avatar-url
+                 replace-and-char
+                 (format "<itunes:image href=\"%s\"/>")) ""))
+    (channel-entries->rss entries)
+    (.write "</channel>")
+    (.write "</rss>")
+    (.flush)))
 
 (defn time-str->epoch-second [time-str]
   (-> time-str
@@ -231,13 +227,11 @@
   (doseq [ext-inf ext-inf-list]
     (print-ext-inf writer ext-inf)))
 
-(defn print-ext-m3u [file {:keys [ext-inf-list]}]
-  (with-open [w (io/writer file)]
-    (doto w
-      (.write "#EXTM3U\n")
-      (print-ext-inf-list ext-inf-list)
-      (.flush))
-    nil))
+(defn print-ext-m3u [writer {:keys [ext-inf-list]}]
+  (doto writer
+    (.write "#EXTM3U\n")
+    (print-ext-inf-list ext-inf-list)
+    (.flush)))
 
 ;; === Markdown Table ===
 
@@ -503,13 +497,17 @@
   (->>
    info-list
    info-list->channel
-   (channel->rss file)))
+   (#(with-open [w (io/writer file)]
+       (channel->rss w %)
+       nil))))
 
 (defmethod print-info-list "m3u"
   [info-list file]
   (->> info-list
        info-list->ext-m3u
-       (print-ext-m3u file)))
+       (#(with-open [w (io/writer file)]
+           (print-ext-m3u w %)
+           nil))))
 
 (defmethod print-info-list "md"
   [info-list file]
