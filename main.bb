@@ -46,7 +46,7 @@
                  ^boolean has-english-subtitle
                  ^boolean has-uncensored-leak])
 
-;; === Model [Channel] ===
+;; === Rss ===
 
 (defrecord CoverImage [^String url
                        ^int width
@@ -67,8 +67,6 @@
                     ^String url
                     ^String avatar-url
                     entries])
-
-;; === [Channel] to rss ===
 
 (defn rfc1123-datetime-formatted
   [timestamp]
@@ -205,7 +203,43 @@
    (conj [])
    info-list->channel))
 
-;; === Convert [Info] list to Markdown Table ===
+;; === M3U ===
+
+(defrecord ExtInf [^String title
+                   ^String tvg-logo
+                   ^String play-link])
+
+(defrecord ExtM3u [ext-inf-list])
+
+(defn info->ext-inf [info]
+  (map->ExtInf {:title (:title info)
+                :tvg-logo (:cover-url info)
+                :play-link (:play-url info)}))
+
+(defn info-list->ext-m3u [info-list]
+  (->ExtM3u
+   (mapv info->ext-inf info-list)))
+
+(defn print-ext-inf [writer {:keys [tilte tvg-logo play-link]}]
+  (doto writer
+    (.write "#EXTINF:-1 ")
+    (.write (format "tvg-logo=\"%s\",%s\n" tvg-logo tilte))
+    (.write play-link)
+    (.write "\n")))
+
+(defn print-ext-inf-list [writer ext-inf-list]
+  (doseq [ext-inf ext-inf-list]
+    (print-ext-inf writer ext-inf)))
+
+(defn print-ext-m3u [file {:keys [ext-inf-list]}]
+  (with-open [w (io/writer file)]
+    (doto w
+      (.write "#EXTM3U\n")
+      (print-ext-inf-list ext-inf-list)
+      (.flush))
+    nil))
+
+;; === Markdown Table ===
 
 (defn info-keys
   "Returns keys of [Info]"
@@ -478,6 +512,12 @@
        (conj [])
        (fs/write-lines file)))
 
+(defmethod print-info-list "m3u"
+  [info-list file]
+  (->> info-list
+       info-list->ext-m3u
+       (print-ext-m3u file)))
+
 (defn -main [args]
   (let [info-list
         (->>
@@ -488,6 +528,9 @@
 
     (log/info "writing rss.xml")
     (print-info-list info-list "rss.xml")
+
+    (log/info "writing rss.m3u")
+    (print-info-list info-list "rss.m3u")
 
     (log/info "writing README.md")
     (print-info-list info-list "README.md")))
