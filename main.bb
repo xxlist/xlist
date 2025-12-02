@@ -173,7 +173,7 @@
   (map->ChannelEntry {:id (:code info)
                       :title (:title info)
                       :description (:description info)
-                      :timestamp (-> (:publish-date info) time-str->epoch-second)
+                      :timestamp (some-> (:publish-date info) time-str->epoch-second)
                       :duration nil
                       :url (:home-url info)
                       :video-url (:play-url info)
