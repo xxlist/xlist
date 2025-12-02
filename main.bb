@@ -122,8 +122,8 @@
     (.write "<itunes:duration>")
     (.write (str duration))
     (.write "</itunes:duration>")
-    (.write (format "<itunes:image href=\"%s\"/>" (-> (last cover-images) :url replace-and-char)))
-    (.write (format "<enclosure url=\"%s\" type=\"video/mp4\"/>" (-> video-url replace-and-char)))
+    (.write (format "<itunes:image href=\"%s\"/>" (or (some-> (last cover-images) :url replace-and-char) "")))
+    (.write (format "<enclosure url=\"%s\" type=\"video/mp4\"/>" (or (some-> video-url replace-and-char) "")))
     (.write "</item>")))
 
 (defn channel-entries->rss
@@ -220,11 +220,11 @@
   (->ExtM3u
    (mapv info->ext-inf info-list)))
 
-(defn print-ext-inf [writer {:keys [tilte tvg-logo play-link]}]
+(defn print-ext-inf [writer {:keys [title tvg-logo play-link]}]
   (doto writer
     (.write "#EXTINF:-1 ")
-    (.write (format "tvg-logo=\"%s\",%s\n" tvg-logo tilte))
-    (.write play-link)
+    (.write (format "tvg-logo=\"%s\",%s\n" (or tvg-logo "") (or title "")))
+    (.write (or play-link ""))
     (.write "\n")))
 
 (defn print-ext-inf-list [writer ext-inf-list]
@@ -505,18 +505,18 @@
    info-list->channel
    (channel->rss file)))
 
+(defmethod print-info-list "m3u"
+  [info-list file]
+  (->> info-list
+       info-list->ext-m3u
+       (print-ext-m3u file)))
+
 (defmethod print-info-list "md"
   [info-list file]
   (->> info-list
        info-list->md-table
        (conj [])
        (fs/write-lines file)))
-
-(defmethod print-info-list "m3u"
-  [info-list file]
-  (->> info-list
-       info-list->ext-m3u
-       (print-ext-m3u file)))
 
 (defn -main [args]
   (let [info-list
