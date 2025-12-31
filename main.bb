@@ -391,6 +391,21 @@
   (let [re #"usertext\-body[\s\S]+?class=\"my\-videos\"[\s\S]+?poster=\"(.+?)\""]
     (some->> html-content (re-seq re) first last str/trim)))
 
+(defmethod html->info-field [:badnews-dm :title]
+  [_ html-content]
+  (let [re #"<title>(.+?)</title>"]
+    (some->> html-content (re-seq re) first last str/trim)))
+
+(defmethod html->info-field [:badnews-dm :play-url]
+  [_ html-content]
+  (let [re #"<video data-source='(.+?)'"]
+    (some->> html-content (re-seq re) first last str/trim)))
+
+(defmethod html->info-field [:badnews-dm :cover-url]
+  [_ html-content]
+  (let [re #"\"og:image\" content=\"(.+?)\""]
+    (some->> html-content (re-seq re) first last str/trim)))
+
 (defn ^Info html->info
   "Parse [Info] from html content"
   [^String code ^String home-url ^String html-content]
@@ -423,6 +438,8 @@
 
 (def ^String base-uri "https://missav.ai/cn")
 (def ^String badnews-base-uri "https://bad.news/t")
+(def ^String badnews-dm-uri "https://bad.news/dm/play")
+
 (def base-header {:accept "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
                   :accept-encoding "gzip, deflate, br"
                   :accept-language "zh-CN,zh-HK;q=0.9,zh;q=0.8"
@@ -456,9 +473,12 @@
     :else info))
 
 (defn origin-home-url [code]
-  (if (str/starts-with? code "badnews-")
+  (cond
+    (str/starts-with? code "badnews-id-")
+    [:badnews-dm (str badnews-dm-uri "/" (subs code (count "badnews-")))]
+    (str/starts-with? code "badnews-")
     [:badnews (str badnews-base-uri "/" (subs code (count "badnews-")))]
-    [:missav (str base-uri "/" code)]))
+    :else [:missav (str base-uri "/" code)]))
 
 (defn ^Info code->info
   "Fetch [Info] by the given code"

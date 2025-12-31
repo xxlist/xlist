@@ -290,3 +290,11 @@ badnews-5837975
 badnews-5837468
 badnews-5837331
 badnews-5839770
+badnews-id-379
+badnews-id-421
+badnews-id-514
+badnews-id-572
+badnews-id-553
+badnews-id-597
+badnews-id-648
+badnews-id-698
