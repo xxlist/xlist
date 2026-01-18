@@ -450,7 +450,7 @@
   "Fetch html content by the given url"
   [^String url]
   (log/debug url)
-  (-> (http/get url {:throw true :headers base-headers}) :body))
+  (-> (http/get url {:throw true}) :body))
 
 (defn ^Info update-play-url-if-need
   "Update play-url if need"
