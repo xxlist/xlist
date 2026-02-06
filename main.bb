@@ -189,7 +189,7 @@
   (->>
    (map->Info
     {:code  "juq-933"
-     :home-url "https://missav.ai/cn/juq-933"
+     :home-url "https://missav.ai/juq-933"
      :preview-url "https://fourhoi.com/JUQ-933/preview.mp4"
      :title "JUQ-933 补习老师小百合的不为人知的一面 叶山小百合 - 叶山さゆり"
      :description "今天放学后，我也听到走廊上有对学生大喊大叫的声音。这个声音是实习导师小百合老师。她是一位非常认真严格的老师，在我们学校争夺第一名和第二名，但作为班代表和一个专心学习的学生，我暗暗喜欢小百合老师的态度。有一天，当我爬上移动教室的楼梯时，我听到楼上传来小百合老师的声音。当我猛然抬头呼唤她时，小百合老师没有穿内裤。看到如此严肃的老师我惊呆了……我的裤裆也渐渐变硬了……"
@@ -304,7 +304,7 @@
   (let [data (repeat 2
                      (map->Info
                       {:code  "juq-933"
-                       :home-url "https://missav.ai/cn/juq-933"
+                       :home-url "https://missav.ai/juq-933"
                        :preview-url "https://fourhoi.com/JUQ-933/preview.mp4"
                        :title "JUQ-933 补习老师小百合的不为人知的一面 叶山小百合 - 叶山さゆり"
                        :publish-date "2024-10-04"
@@ -432,11 +432,11 @@
   (->>
    (fs/read-all-bytes "test.html")
    (String.)
-   (html->info "juq-933" "https://missav.ai/cn/juq-933")))
+   (html->info "juq-933" "https://missav.ai/juq-933")))
 
 ;; === Fetch [Info] ===
 
-(def ^String base-uri "https://missav.ai/cn")
+(def ^String base-uri "https://missav.ai")
 (def ^String badnews-base-uri "https://bad.news/t")
 (def ^String badnews-dm-uri "https://bad.news/dm/play")
 
