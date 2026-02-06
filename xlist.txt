@@ -250,6 +250,7 @@ shkd-912
 smok-001
 snis-626
 sone-795
+snos-082
 sora-060
 ssis-076
 ssis-257
