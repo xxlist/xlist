@@ -240,14 +240,14 @@
   []
   [:code :cover-url :title])
 
-(defn ^String info-markdown-table-header
+(defn ^String info-md-table-header
   "Generate markdown table header for [Info]"
   []
   (str "|"
        (str/join "|" (info-keys))
        "|"))
 
-(defn ^String info-markdown-table-seperator-line
+(defn ^String info-md-table-seperator-line
   "Generate markdown table seperator line for [Info]"
   []
   (str "|"
@@ -276,7 +276,7 @@
           (get info :cover-url "")
           (get info :play-url "")))
 
-(defn ^String info->markdown-table-row
+(defn ^String info->md-table-row
   "Convert [Info] to markdown table row"
   [^Info info]
   (str "| "
@@ -288,15 +288,15 @@
 (defn ^String info-list->md-table-body
   "Generate markdown table body by the given [Info] list"
   [info-list]
-  (->> info-list (map info->markdown-table-row) (str/join "\n")))
+  (->> info-list (map info->md-table-row) (str/join "\n")))
 
 (defn ^String info-list->md-table
   "Convert [Info] list to markdown table"
   [info-list]
   (str
-   (info-markdown-table-header)
+   (info-md-table-header)
    "\n"
-   (info-markdown-table-seperator-line)
+   (info-md-table-seperator-line)
    "\n"
    (info-list->md-table-body info-list)))
 
