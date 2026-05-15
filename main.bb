@@ -536,6 +536,7 @@
   (let [info-list
         (->>
          (fs/read-all-lines "xlist.txt")
+         (filter #(not (str/starts-with? % ";")))
          sort
          distinct
          code-list->info-list)]
